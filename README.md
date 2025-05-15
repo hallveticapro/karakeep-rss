@@ -32,6 +32,7 @@ You can use `.env.example` as a starting point:
 
 ```bash
 cp .env.example .env
+```
 
 ---
 
