@@ -1,20 +1,34 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { NextResponse } from "next/server";
 import axios from "axios";
 import { Feed } from "feed";
 
 const KARAKEEP_API_BASE = process.env.KARAKEEP_API_BASE;
 
-// 🔧 Normalize curly quotes, dashes, and weird characters (for title + description only)
+// 🔧 Normalize curly quotes, dashes, and smart characters
 function normalizeText(input: string): string {
   return input
     .replace(/[\u2018\u2019]/g, "'") // single quotes
     .replace(/[\u201C\u201D]/g, '"') // double quotes
-    .replace(/[\u2013\u2014]/g, "-") // en/em dashes
-    .replace(/\u00a0/g, " ") // non-breaking spaces
+    .replace(/[\u2013\u2014]/g, "-") // dashes
+    .replace(/\u00a0/g, " ") // non-breaking space
     .normalize("NFKC");
 }
+
+// 🔖 Bookmark type for stricter typing
+type Bookmark = {
+  id: string;
+  createdAt: string;
+  content?: {
+    url?: string;
+    title?: string;
+    description?: string;
+    favicon?: string;
+    htmlContent?: string;
+    imageUrl?: string;
+    imageAssetId?: string;
+    screenshotAssetId?: string;
+  };
+};
 
 export async function GET() {
   try {
@@ -22,7 +36,7 @@ export async function GET() {
       Authorization: `Bearer ${process.env.KARAKEEP_API_KEY}`,
     };
 
-    // Step 1: Get all lists
+    // 🔹 Step 1: Get all lists
     const listsRes = await axios.get(`${KARAKEEP_API_BASE}/api/v1/lists`, {
       headers,
     });
@@ -39,10 +53,7 @@ export async function GET() {
 
     const listId = list.id;
 
-    // Step 2: (optional) Get list metadata
-    await axios.get(`${KARAKEEP_API_BASE}/api/v1/lists/${listId}`, { headers });
-
-    // Step 3: Get bookmarks with full content
+    // 🔹 Step 2: Get bookmarks with full content
     const bookmarksRes = await axios.get(
       `${KARAKEEP_API_BASE}/api/v1/lists/${listId}/bookmarks`,
       {
@@ -53,7 +64,7 @@ export async function GET() {
       }
     );
 
-    const bookmarks = Array.isArray(bookmarksRes.data.bookmarks)
+    const bookmarks: Bookmark[] = Array.isArray(bookmarksRes.data.bookmarks)
       ? bookmarksRes.data.bookmarks
       : [];
 
@@ -80,7 +91,10 @@ export async function GET() {
       const title = normalizeText(rawTitle);
       const description = normalizeText(rawDescription);
 
-      // 🧠 HTML content block with formatting for readers like Lire
+      const imageBlock = content.imageUrl
+        ? `<img src="${content.imageUrl}" alt="preview image" style="max-width:100%; margin: 1em 0;" />`
+        : "";
+
       const formattedHTML = `
         <div style="font-family: sans-serif; line-height: 1.6; font-size: 15px;">
           ${
@@ -89,6 +103,7 @@ export async function GET() {
               : ""
           }
           <p><em>${description}</em></p>
+          ${imageBlock}
           ${htmlContent}
         </div>
       `;
