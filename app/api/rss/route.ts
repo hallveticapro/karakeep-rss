@@ -65,6 +65,43 @@ type Bookmark = {
   };
 };
 
+async function fetchAllBookmarks(
+  listId: string,
+  headers: any
+): Promise<Bookmark[]> {
+  const bookmarks: Bookmark[] = [];
+  let cursor: string | undefined = undefined;
+
+  while (true) {
+    const res = await axios.get(
+      `${KARAKEEP_API_BASE}/api/v1/lists/${listId}/bookmarks`,
+      {
+        headers,
+        params: {
+          includeContent: true,
+          limit: 10000,
+          cursor,
+        },
+      }
+    );
+
+    const pageBookmarks: Bookmark[] = Array.isArray(res.data.bookmarks)
+      ? res.data.bookmarks
+      : [];
+    bookmarks.push(...pageBookmarks);
+
+    cursor = res.data.cursor;
+    if (!cursor || pageBookmarks.length === 0) break;
+  }
+
+  const seen = new Set<string>();
+  return bookmarks.filter((bm) => {
+    if (seen.has(bm.id)) return false;
+    seen.add(bm.id);
+    return true;
+  });
+}
+
 export async function GET() {
   try {
     const headers = {
@@ -90,22 +127,11 @@ export async function GET() {
     const allBookmarks: Bookmark[] = [];
 
     for (const list of matchedLists) {
-      const bookmarksRes = await axios.get(
-        `${KARAKEEP_API_BASE}/api/v1/lists/${list.id}/bookmarks`,
-        {
-          headers,
-          params: { includeContent: true },
-        }
-      );
-
-      const bookmarks: Bookmark[] = Array.isArray(bookmarksRes.data.bookmarks)
-        ? bookmarksRes.data.bookmarks
-        : [];
-
+      const bookmarks = await fetchAllBookmarks(list.id, headers);
       allBookmarks.push(...bookmarks);
     }
 
-    // Sort bookmarks by date descending
+    // Sort newest to oldest
     allBookmarks.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -125,7 +151,6 @@ export async function GET() {
       const title = normalizeText(content.title || content.url || "Untitled");
       const htmlContent = content.htmlContent || "";
 
-      // Clean and prep content
       const coreHTML = stripReadabilityWrapper(htmlContent);
       const cleanedHTML = cleanEntities(removeDuplicateImages(coreHTML));
 
