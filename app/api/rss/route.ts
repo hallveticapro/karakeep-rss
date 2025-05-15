@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { NextResponse } from "next/server";
 import axios from "axios";
 import { Feed } from "feed";
@@ -73,15 +71,19 @@ async function fetchAllBookmarks(
   let cursor: string | undefined = undefined;
 
   while (true) {
+    const params: Record<string, any> = {
+      includeContent: true,
+      limit: 10000,
+    };
+    if (cursor) {
+      params.cursor = cursor;
+    }
+
     const res = await axios.get(
       `${KARAKEEP_API_BASE}/api/v1/lists/${listId}/bookmarks`,
       {
         headers,
-        params: {
-          includeContent: true,
-          limit: 10000,
-          cursor,
-        },
+        params,
       }
     );
 
