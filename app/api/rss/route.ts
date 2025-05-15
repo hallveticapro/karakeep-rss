@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { NextResponse } from "next/server";
 import axios from "axios";
 import { Feed } from "feed";
@@ -14,7 +16,20 @@ function normalizeText(input: string): string {
     .normalize("NFKC");
 }
 
-// 🔖 Bookmark type for stricter typing
+// 🧽 Clean broken UTF-8 artifacts that leak from badly decoded HTML
+function cleanUTF8(html: string): string {
+  return html
+    .replace(/â€™/g, "'")
+    .replace(/â€œ/g, '"')
+    .replace(/â€/g, '"')
+    .replace(/â€“|â€”/g, "-")
+    .replace(/â€¦/g, "...")
+    .replace(/â€˜/g, "'")
+    .replace(/â€/g, "")
+    .normalize("NFKC");
+}
+
+// 🔖 Bookmark type for typing safety
 type Bookmark = {
   id: string;
   createdAt: string;
@@ -36,7 +51,7 @@ export async function GET() {
       Authorization: `Bearer ${process.env.KARAKEEP_API_KEY}`,
     };
 
-    // 🔹 Step 1: Get all lists
+    // Step 1: Get lists
     const listsRes = await axios.get(`${KARAKEEP_API_BASE}/api/v1/lists`, {
       headers,
     });
@@ -53,7 +68,7 @@ export async function GET() {
 
     const listId = list.id;
 
-    // 🔹 Step 2: Get bookmarks with full content
+    // Step 2: Get bookmarks
     const bookmarksRes = await axios.get(
       `${KARAKEEP_API_BASE}/api/v1/lists/${listId}/bookmarks`,
       {
@@ -95,7 +110,7 @@ export async function GET() {
         ? `<img src="${content.imageUrl}" alt="preview image" style="max-width:100%; margin: 1em 0;" />`
         : "";
 
-      const formattedHTML = `
+      const formattedHTML = cleanUTF8(`
         <div style="font-family: sans-serif; line-height: 1.6; font-size: 15px;">
           ${
             favicon
@@ -106,21 +121,22 @@ export async function GET() {
           ${imageBlock}
           ${htmlContent}
         </div>
-      `;
+      `);
 
+      // ✨ Duplicate full HTML to both fields for better client compatibility
       feed.addItem({
         title,
         id: bm.id,
         link,
         date: new Date(bm.createdAt || Date.now()),
-        description,
+        description: formattedHTML,
         content: formattedHTML,
       });
     });
 
     return new NextResponse(feed.rss2(), {
       headers: {
-        "Content-Type": "application/rss+xml",
+        "Content-Type": "application/rss+xml; charset=utf-8",
       },
     });
   } catch (err: any) {
