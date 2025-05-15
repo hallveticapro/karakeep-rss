@@ -10,6 +10,18 @@ const LIST_NAMES = (process.env.KARAKEEP_LISTS || "")
   .map((name) => name.trim().toLowerCase())
   .filter(Boolean);
 
+const FEED_TITLE = process.env.FEED_TITLE?.trim() || "Bookmarks from Karakeep";
+const FEED_DESCRIPTION =
+  process.env.FEED_DESCRIPTION?.trim() ||
+  "An RSS feed of your selected Karakeep bookmarks.";
+const FEED_AUTHOR = process.env.FEED_AUTHOR?.trim();
+const FEED_COPYRIGHT =
+  process.env.FEED_COPYRIGHT?.trim() || "Copyright © 2025 hallveticapro";
+const BOOKMARK_LIMIT = Math.min(
+  parseInt(process.env.BOOKMARK_LIMIT || "100", 10),
+  100
+);
+
 function normalizeText(input: string): string {
   return input
     .replace(/[\u2018\u2019]/g, "'")
@@ -135,22 +147,22 @@ export async function GET() {
       allBookmarks.push(...bookmarks);
     }
 
-    // Sort newest to oldest
     allBookmarks.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
     const feed = new Feed({
-      title: "Bookmarks from Karakeep",
-      description: "An RSS feed of your selected Karakeep bookmarks.",
+      title: FEED_TITLE,
+      description: FEED_DESCRIPTION,
       id: "https://karakeep-rss.app",
       link: "https://karakeep-rss.app",
       language: "en",
-      copyright: "2025 hallveticapro",
+      copyright: FEED_COPYRIGHT,
+      ...(FEED_AUTHOR ? { author: { name: FEED_AUTHOR } } : {}),
     });
 
-    allBookmarks.forEach((bm) => {
+    allBookmarks.slice(0, BOOKMARK_LIMIT).forEach((bm) => {
       const content = bm.content || {};
       const title = normalizeText(content.title || content.url || "Untitled");
       const htmlContent = content.htmlContent || "";

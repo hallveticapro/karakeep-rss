@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 Karakeep RSS Generator
 
-## Getting Started
+Karakeep RSS is a lightweight Node/Next.js-based application that generates an RSS feed from your archived Karakeep bookmarks. Designed for simplicity and readability, this tool helps you consume your saved content in any RSS reader — turning a bookmarking tool into a personalized reading stream.
 
-First, run the development server:
+---
+
+## 🚀 Features
+
+- 📰 Converts your Karakeep bookmark archives into a valid RSS 2.0 feed.
+- 🔍 Filters and displays archived bookmarks in a clean, structured feed.
+- 🛡️ Secure access via Karakeep API token.
+- 📦 Deployable via Docker with minimal setup.
+
+---
+
+## ⚙️ Environment Variables
+
+The app uses the following environment variables to authenticate with Karakeep and customize feed behavior.
+
+| Variable               | Required | Description                                                                 |
+|------------------------|----------|-----------------------------------------------------------------------------|
+| `KARAKEEP_API_BASE`    | ✅ Yes   | The base URL of your Karakeep API (e.g., `https://karakeep.app`).           |
+| `KARAKEEP_API_KEY`     | ✅ Yes   | Your personal API token to authenticate requests.                          |
+| `KARAKEEP_LISTS`       | ✅ Yes   | Comma-separated list of list names to include in the feed. Case-insensitive. |
+| `FEED_TITLE`           | ❌ No    | Custom title for the RSS feed (default: `Bookmarks from Karakeep`).        |
+| `FEED_DESCRIPTION`     | ❌ No    | Optional feed description.                                                 |
+| `FEED_AUTHOR`          | ❌ No    | Author name for RSS feed metadata.                                         |
+| `FEED_COPYRIGHT`       | ❌ No    | Feed copyright (default: `Copyright © 2025 hallveticapro`).                |
+| `BOOKMARK_LIMIT`       | ❌ No    | Max number of bookmarks in the feed. Default: `100`, Max: `100`.           |
+
+You can use `.env.example` as a starting point:
+
+```bash
+cp .env.example .env
+
+---
+
+## 🐳 Docker Usage
+
+You can easily deploy this application using Docker. Here's how:
+
+### 1. Create a `.env` file
+
+```bash
+cp .env.example .env
+```
+
+Fill in your credentials and desired configuration.
+
+### 2. Build the Docker image
+
+```bash
+docker build -t karakeep-rss .
+```
+
+### 3. Run the container
+
+```bash
+docker run -d --name karakeep-rss \
+  -p 3000:3000 \
+  --env-file .env \
+  karakeep-rss
+```
+
+The RSS feed will be available at:
+\`http://localhost:3000/api/rss\`
+
+---
+
+## 🔧 Local Development
+
+To run locally without Docker:
+
+1. Clone the repo:
+
+```bash
+git clone https://github.com/hallveticapro/karakeep-rss.git
+cd karakeep-rss
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Create a `.env` file with the required variables.
+
+4. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then visit \`http://localhost:3000/api/rss\` in your browser or RSS reader.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧪 Testing
 
-## Learn More
+To test your RSS feed's structure, paste your `/api/rss` URL into an RSS validator such as:
 
-To learn more about Next.js, take a look at the following resources:
+- https://validator.w3.org/feed/
+- https://www.rssboard.org/rss-validator/
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ❓ FAQ
 
-## Deploy on Vercel
+**Q: What happens if I don’t set \`BOOKMARK_LIMIT\`?**
+A: The feed will include up to 100 bookmarks, which is also the maximum limit supported.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Q: Does it support non-archived bookmarks?**
+A: Not at the moment — the feed is generated from archived content only.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📄 License
+
+MIT © 2025 hallveticapro
+
+---
+
+## 🙌 Credits
+
+Built by Andrew Hall. Inspired by the need to bring structure and readability to saved content.
+Special thanks to Karakeep for the elegant API.
