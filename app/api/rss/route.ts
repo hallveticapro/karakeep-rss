@@ -47,6 +47,11 @@ function removeDuplicateImages(html: string): string {
   });
 }
 
+function extractFirstImage(html: string): string | null {
+  const match = html.match(/<img[^>]+src="([^"]+)"[^>]*>/i);
+  return match ? match[0] : null;
+}
+
 type Bookmark = {
   id: string;
   createdAt: string;
@@ -113,33 +118,30 @@ export async function GET() {
       const content = bm.content || {};
       const title = normalizeText(content.title || content.url || "Untitled");
       const htmlContent = content.htmlContent || "";
-      const favicon = content.favicon
-        ? `<img src="${content.favicon}" alt="favicon" width="16" height="16" style="margin-right:4px;vertical-align:middle;" /> `
-        : "";
-      const imageBlock = content.imageUrl
-        ? `<img src="${content.imageUrl}" alt="preview image" style="max-width:100%; margin: 1em 0;" />`
-        : "";
-      const fullHTML = `
-        <div style="font-family: sans-serif; line-height: 1.6; font-size: 15px;">
-          ${
-            favicon
-              ? `<div style="margin-bottom: 8px;">${favicon}<strong>${title}</strong></div>`
-              : ""
-          }
-          ${imageBlock}
-          ${htmlContent}
-        </div>
-      `;
-      const cleanedHTML = cleanEntities(
-        removeDuplicateImages(stripReadabilityWrapper(fullHTML))
-      );
+
+      // Clean HTML wrapper and dedupe images
+      const coreHTML = stripReadabilityWrapper(htmlContent);
+      const cleanedHTML = cleanEntities(removeDuplicateImages(coreHTML));
+
+      // Preview: first image from HTML, or fallback to imageUrl
+      const previewImage =
+        extractFirstImage(coreHTML) ||
+        (content.imageUrl
+          ? `<img src="${content.imageUrl}" alt="preview image" style="max-width:100%; margin: 1em 0;" />`
+          : "");
 
       feed.addItem({
         title,
         id: bm.id,
         link: content.url || "#",
         date: new Date(bm.createdAt || Date.now()),
-        content: cleanedHTML,
+        description: previewImage,
+        content: `
+          <div style="font-family: sans-serif; line-height: 1.6; font-size: 15px;">
+            <strong>${title}</strong>
+            ${cleanedHTML}
+          </div>
+        `,
       });
     });
 
