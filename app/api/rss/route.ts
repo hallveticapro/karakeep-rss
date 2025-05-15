@@ -3,11 +3,10 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
 import { Feed } from "feed";
-import { htmlToText } from "html-to-text";
 
 const KARAKEEP_API_BASE = process.env.KARAKEEP_API_BASE;
 
-// 🔧 Normalize curly quotes, dashes, and weird characters
+// 🔧 Normalize curly quotes, dashes, and weird characters (for title + description only)
 function normalizeText(input: string): string {
   return input
     .replace(/[\u2018\u2019]/g, "'") // single quotes
@@ -28,7 +27,7 @@ export async function GET() {
       headers,
     });
     const list = listsRes.data.lists.find(
-      (list: any) => list.name === "Great Articles"
+      (list: { name: string }) => list.name === "Great Articles"
     );
 
     if (!list) {
@@ -67,27 +66,32 @@ export async function GET() {
       copyright: `${new Date().getFullYear()} You`,
     });
 
-    bookmarks.forEach((bm: any) => {
+    bookmarks.forEach((bm) => {
       const content = bm.content || {};
 
       const rawTitle = content.title || content.url || "Untitled";
       const rawDescription = content.description || "No description available.";
-      const rawHtml = content.htmlContent || "";
-
-      const title = normalizeText(rawTitle);
-      const description = normalizeText(rawDescription);
-
-      let textOnly = htmlToText(rawHtml, {
-        wordwrap: 130,
-        selectors: [{ selector: "img", format: "skip" }],
-      });
-
-      textOnly = normalizeText(textOnly);
-
+      const htmlContent = content.htmlContent || "";
       const link = content.url || "#";
       const favicon = content.favicon
         ? `<img src="${content.favicon}" alt="favicon" width="16" height="16" style="margin-right:4px;vertical-align:middle;" /> `
         : "";
+
+      const title = normalizeText(rawTitle);
+      const description = normalizeText(rawDescription);
+
+      // 🧠 HTML content block with formatting for readers like Lire
+      const formattedHTML = `
+        <div style="font-family: sans-serif; line-height: 1.6; font-size: 15px;">
+          ${
+            favicon
+              ? `<div style="margin-bottom: 8px;">${favicon}<strong>${title}</strong></div>`
+              : ""
+          }
+          <p><em>${description}</em></p>
+          ${htmlContent}
+        </div>
+      `;
 
       feed.addItem({
         title,
@@ -95,11 +99,7 @@ export async function GET() {
         link,
         date: new Date(bm.createdAt || Date.now()),
         description,
-        content: `
-          ${favicon}<strong>${title}</strong><br/>
-          <em>${description}</em><br/><br/>
-          ${textOnly}
-        `,
+        content: formattedHTML,
       });
     });
 
