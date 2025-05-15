@@ -105,6 +105,12 @@ export async function GET() {
       allBookmarks.push(...bookmarks);
     }
 
+    // Sort bookmarks by date descending
+    allBookmarks.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
     const feed = new Feed({
       title: "Bookmarks from Karakeep",
       description: "An RSS feed of your selected Karakeep bookmarks.",
@@ -119,11 +125,10 @@ export async function GET() {
       const title = normalizeText(content.title || content.url || "Untitled");
       const htmlContent = content.htmlContent || "";
 
-      // Clean HTML wrapper and dedupe images
+      // Clean and prep content
       const coreHTML = stripReadabilityWrapper(htmlContent);
       const cleanedHTML = cleanEntities(removeDuplicateImages(coreHTML));
 
-      // Preview: first image from HTML, or fallback to imageUrl
       const previewImage =
         extractFirstImage(coreHTML) ||
         (content.imageUrl
