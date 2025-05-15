@@ -28,12 +28,6 @@ The app uses the following environment variables to authenticate with Karakeep a
 | `FEED_COPYRIGHT`       | ❌ No    | Feed copyright (default: `Copyright © 2025 hallveticapro`).                |
 | `BOOKMARK_LIMIT`       | ❌ No    | Max number of bookmarks in the feed. Default: `100`, Max: `100`.           |
 
-You can use `.env.example` as a starting point:
-
-```bash
-cp .env.example .env
-```
-
 ---
 
 ## 🐳 Docker Usage
@@ -41,6 +35,8 @@ cp .env.example .env
 You can easily deploy this application using Docker. Here's how:
 
 ### 1. Create a `.env` file
+
+You can use `.env.example` as a starting point:
 
 ```bash
 cp .env.example .env
@@ -64,7 +60,7 @@ docker run -d --name karakeep-rss \
 ```
 
 The RSS feed will be available at:
-\`http://localhost:3000/api/rss\`
+http://localhost:3000/api/rss
 
 ---
 
@@ -93,7 +89,7 @@ npm install
 npm run dev
 ```
 
-Then visit \`http://localhost:3000/api/rss\` in your browser or RSS reader.
+Then visit http://localhost:3000/api/rss in your browser or RSS reader.
 
 ---
 
@@ -108,7 +104,7 @@ To test your RSS feed's structure, paste your `/api/rss` URL into an RSS validat
 
 ## ❓ FAQ
 
-**Q: What happens if I don’t set \`BOOKMARK_LIMIT\`?**
+**Q: What happens if I don’t set BOOKMARK_LIMIT?**
 A: The feed will include up to 100 bookmarks, which is also the maximum limit supported.
 
 **Q: Does it support non-archived bookmarks?**
