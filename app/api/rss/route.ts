@@ -5,13 +5,17 @@ import axios from "axios";
 import { Feed } from "feed";
 
 const KARAKEEP_API_BASE = process.env.KARAKEEP_API_BASE;
+const LIST_NAMES = (process.env.KARAKEEP_LISTS || "")
+  .split(",")
+  .map((name) => name.trim().toLowerCase())
+  .filter(Boolean);
 
 function normalizeText(input: string): string {
   return input
-    .replace(/[\u2018\u2019]/g, "'") // single quotes
-    .replace(/[\u201C\u201D]/g, '"') // double quotes
-    .replace(/[\u2013\u2014]/g, "-") // dashes
-    .replace(/\u00a0/g, " ") // non-breaking space
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/\u00a0/g, " ")
     .normalize("NFKC");
 }
 
@@ -31,7 +35,7 @@ function cleanEntities(input: string): string {
 function stripReadabilityWrapper(html: string): string {
   return html
     .replace(/<div[^>]*id="readability-page-1"[^>]*>/gi, "")
-    .replace(/<\/div><\/div>$/, ""); // close extra wrappers
+    .replace(/<\/div><\/div>$/, "");
 }
 
 type Bookmark = {
@@ -56,51 +60,56 @@ export async function GET() {
     const listsRes = await axios.get(`${KARAKEEP_API_BASE}/api/v1/lists`, {
       headers,
     });
-    const list = listsRes.data.lists.find(
-      (l: { name: string }) => l.name === "Great Articles"
+    const allLists: { id: string; name: string }[] = listsRes.data.lists;
+
+    const matchedLists = allLists.filter((list) =>
+      LIST_NAMES.includes(list.name.trim().toLowerCase())
     );
-    if (!list) {
+
+    if (matchedLists.length === 0) {
       return NextResponse.json(
-        { error: 'List "Great Articles" not found' },
+        { error: "No matching Karakeep lists found" },
         { status: 404 }
       );
     }
 
-    const bookmarksRes = await axios.get(
-      `${KARAKEEP_API_BASE}/api/v1/lists/${list.id}/bookmarks`,
-      {
-        headers,
-        params: { includeContent: true },
-      }
-    );
+    const allBookmarks: Bookmark[] = [];
 
-    const bookmarks: Bookmark[] = Array.isArray(bookmarksRes.data.bookmarks)
-      ? bookmarksRes.data.bookmarks
-      : [];
+    for (const list of matchedLists) {
+      const bookmarksRes = await axios.get(
+        `${KARAKEEP_API_BASE}/api/v1/lists/${list.id}/bookmarks`,
+        {
+          headers,
+          params: { includeContent: true },
+        }
+      );
+
+      const bookmarks: Bookmark[] = Array.isArray(bookmarksRes.data.bookmarks)
+        ? bookmarksRes.data.bookmarks
+        : [];
+
+      allBookmarks.push(...bookmarks);
+    }
 
     const feed = new Feed({
-      title: "Great Articles from Karakeep",
-      description: "An RSS feed for your 'Great Articles' list on Karakeep",
+      title: "Bookmarks from Karakeep",
+      description: "An RSS feed of your selected Karakeep bookmarks.",
       id: "https://karakeep-rss.app",
       link: "https://karakeep-rss.app",
       language: "en",
-      copyright: `${new Date().getFullYear()} You`,
+      copyright: "2025 hallveticapro",
     });
 
-    bookmarks.forEach((bm) => {
+    allBookmarks.forEach((bm) => {
       const content = bm.content || {};
-      const rawTitle = content.title || content.url || "Untitled";
+      const title = normalizeText(content.title || content.url || "Untitled");
       const htmlContent = content.htmlContent || "";
-      const link = content.url || "#";
-
-      const title = normalizeText(rawTitle);
       const favicon = content.favicon
         ? `<img src="${content.favicon}" alt="favicon" width="16" height="16" style="margin-right:4px;vertical-align:middle;" /> `
         : "";
       const imageBlock = content.imageUrl
         ? `<img src="${content.imageUrl}" alt="preview image" style="max-width:100%; margin: 1em 0;" />`
         : "";
-
       const fullHTML = `
         <div style="font-family: sans-serif; line-height: 1.6; font-size: 15px;">
           ${
@@ -112,15 +121,14 @@ export async function GET() {
           ${htmlContent}
         </div>
       `;
-
       const cleanedHTML = cleanEntities(stripReadabilityWrapper(fullHTML));
 
       feed.addItem({
         title,
         id: bm.id,
-        link,
+        link: content.url || "#",
         date: new Date(bm.createdAt || Date.now()),
-        content: cleanedHTML, // Use only content:encoded
+        content: cleanedHTML,
       });
     });
 
