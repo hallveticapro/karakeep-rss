@@ -38,6 +38,15 @@ function stripReadabilityWrapper(html: string): string {
     .replace(/<\/div><\/div>$/, "");
 }
 
+function removeDuplicateImages(html: string): string {
+  const seen = new Set<string>();
+  return html.replace(/<img[^>]+src="([^"]+)"[^>]*>/g, (imgTag, src) => {
+    if (seen.has(src)) return "";
+    seen.add(src);
+    return imgTag;
+  });
+}
+
 type Bookmark = {
   id: string;
   createdAt: string;
@@ -121,7 +130,9 @@ export async function GET() {
           ${htmlContent}
         </div>
       `;
-      const cleanedHTML = cleanEntities(stripReadabilityWrapper(fullHTML));
+      const cleanedHTML = cleanEntities(
+        removeDuplicateImages(stripReadabilityWrapper(fullHTML))
+      );
 
       feed.addItem({
         title,
