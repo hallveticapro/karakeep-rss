@@ -155,8 +155,8 @@ export async function GET() {
     const feed = new Feed({
       title: FEED_TITLE,
       description: FEED_DESCRIPTION,
-      id: "https://karakeep-rss.app",
-      link: "https://karakeep-rss.app",
+      id: KARAKEEP_API_BASE || "https://karakeep.app",
+      link: KARAKEEP_API_BASE || "https://karakeep.app",
       language: "en",
       copyright: FEED_COPYRIGHT,
       ...(FEED_AUTHOR ? { author: { name: FEED_AUTHOR } } : {}),
