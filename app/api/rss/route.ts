@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { NextResponse } from "next/server";
 import axios from "axios";
 import { Feed } from "feed";
@@ -73,7 +75,7 @@ async function fetchAllBookmarks(
   while (true) {
     const params: Record<string, any> = {
       includeContent: true,
-      limit: 10000,
+      limit: 100,
     };
     if (cursor) {
       params.cursor = cursor;
