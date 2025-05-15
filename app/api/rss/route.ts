@@ -90,7 +90,6 @@ export async function GET() {
     bookmarks.forEach((bm) => {
       const content = bm.content || {};
       const rawTitle = content.title || content.url || "Untitled";
-      const rawDescription = content.description || "No description available.";
       const htmlContent = content.htmlContent || "";
       const link = content.url || "#";
 
