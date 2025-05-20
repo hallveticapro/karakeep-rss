@@ -22,6 +22,10 @@ const BOOKMARK_LIMIT = Math.min(
   100
 );
 
+const CACHE_TTL = parseInt(process.env.CACHE_TTL_SECONDS || "600", 10); // in seconds
+
+let rssCache: { data: string; timestamp: number } | null = null;
+
 function normalizeText(input: string): string {
   return input
     .replace(/[\u2018\u2019]/g, "'")
@@ -119,6 +123,17 @@ async function fetchAllBookmarks(
 }
 
 export async function GET() {
+  const now = Date.now();
+
+  if (rssCache && now - rssCache.timestamp < CACHE_TTL * 1000) {
+    console.log("✅ Serving cached RSS feed");
+    return new NextResponse(rssCache.data, {
+      headers: {
+        "Content-Type": "application/rss+xml; charset=utf-8",
+      },
+    });
+  }
+
   try {
     const headers = {
       Authorization: `Bearer ${process.env.KARAKEEP_API_KEY}`,
@@ -191,7 +206,15 @@ export async function GET() {
       });
     });
 
-    return new NextResponse(feed.rss2(), {
+    const rssOutput = feed.rss2();
+    rssCache = {
+      data: rssOutput,
+      timestamp: now,
+    };
+
+    console.log("♻️ Refreshed RSS cache");
+
+    return new NextResponse(rssOutput, {
       headers: {
         "Content-Type": "application/rss+xml; charset=utf-8",
       },
