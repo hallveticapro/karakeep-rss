@@ -9,6 +9,7 @@ Karakeep RSS is a lightweight Node/Next.js-based application that generates an R
 - 📰 Converts your Karakeep bookmark archives into a valid RSS 2.0 feed.
 - 🔍 Filters and displays archived bookmarks in a clean, structured feed.
 - 🛡️ Secure access via Karakeep API token.
+- 🧠 Smart in-memory caching to reduce API calls.
 - 📦 Deployable via Docker with minimal setup.
 
 ---
@@ -27,6 +28,7 @@ The app uses the following environment variables to authenticate with Karakeep a
 | `FEED_AUTHOR`          | ❌ No    | Author name for RSS feed metadata.                                         |
 | `FEED_COPYRIGHT`       | ❌ No    | Feed copyright (default: `Copyright © 2025 hallveticapro`).                |
 | `BOOKMARK_LIMIT`       | ❌ No    | Max number of bookmarks in the feed. Default: `100`, Max: `100`.           |
+| `CACHE_TTL_SECONDS`    | ❌ No    | Cache lifespan in seconds (default: 600). Helps avoid excessive API calls.  |
 
 ---
 
@@ -93,6 +95,20 @@ Then visit http://localhost:3000/api/rss in your browser or RSS reader.
 
 ---
 
+## 🧠 Caching
+
+To improve performance and reduce unnecessary load on the Karakeep API, the app caches the RSS feed in memory for a configurable number of seconds. The default is 600 seconds (10 minutes).
+
+You can override this using:
+
+```env
+CACHE_TTL_SECONDS=300
+```
+
+This caching resets automatically once the time limit expires. If you’re testing frequent updates, lower the value accordingly.
+
+---
+
 ## 🧪 Testing
 
 To test your RSS feed's structure, paste your `/api/rss` URL into an RSS validator such as:
@@ -107,8 +123,8 @@ To test your RSS feed's structure, paste your `/api/rss` URL into an RSS validat
 **Q: What happens if I don’t set BOOKMARK_LIMIT?**
 A: The feed will include up to 100 bookmarks, which is also the maximum limit supported.
 
-**Q: Does it support non-archived bookmarks?**
-A: Not at the moment — the feed is generated from archived content only.
+**Q: How do I force-refresh the feed during development?**
+A: Set a low CACHE_TTL_SECONDS (like 10) or restart the server to clear the in-memory cache.
 
 ---
 
